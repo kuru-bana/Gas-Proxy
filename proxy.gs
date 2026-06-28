@@ -6,11 +6,9 @@ function doGet(e) {
   var mode = e.parameter[MODE_PARAM] || "raw";
 
   if (!url) {
-    return jsonResponse({ error: "url parameter is required.", usage: [
-      "?url=https://example.com",
-      "?url=https://example.com&mode=render",
-      "?url=https://example.com/feed.xml&mode=raw"
-    ]}, 400);
+    return HtmlService.createHtmlOutputFromFile('index')
+      .setTitle('GAS CORS Proxy Viewer')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
 
   try {
@@ -26,13 +24,11 @@ function doGet(e) {
       return jsonResponse({ contentType: ct, encoding: "base64", data: b64, statusCode: status });
     }
 
-    // ---- render モード（HTMLをURL書き換えして返す） ----
+    // ---- render モード（HTMLをURL書き換えしてJSONで返す） ----
     if (mode === "render") {
       var baseUrl  = resolveBase(url, body);
       var rewritten = rewriteHtml(body, baseUrl, getScriptUrl(e));
-      var out = ContentService.createTextOutput(rewritten);
-      out.setMimeType(ContentService.MimeType.HTML);
-      return out;
+      return jsonResponse({ html: rewritten });
     }
 
     // ---- raw モード（デフォルト）----
