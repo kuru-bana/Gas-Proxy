@@ -544,11 +544,13 @@
   }
 
   function viewSite() {
-    if (!lastHtml) return;
+    const gasUrl = getGasUrl();
+    const targetUrl = getTargetUrl();
+    if (!gasUrl || !targetUrl) return;
     switchTab('site');
     const frame = document.getElementById('site-frame');
-    const blob = new Blob([lastHtml], { type: 'text/html' });
-    frame.src = URL.createObjectURL(blob);
+    // mode=render でGASがCSS/JSのURLも書き換えたHTMLを返す
+    frame.src = gasUrl + '?mode=render&url=' + encodeURIComponent(targetUrl);
   }
 
   function detectContentType(text) {
