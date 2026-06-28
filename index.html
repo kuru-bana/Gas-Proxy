@@ -432,6 +432,7 @@
 
   <!-- サイト表示パネル -->
   <div class="panel" id="panel-site">
+    <div id="site-status" style="display:none; padding:16px 20px; background:#0f1117; border-bottom:1px solid #2d3148; font-size:13px; color:#64748b;"></div>
     <iframe id="site-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
   </div>
 
@@ -543,14 +544,35 @@
     }
   }
 
-  function viewSite() {
+  async function viewSite() {
     const gasUrl = getGasUrl();
     const targetUrl = getTargetUrl();
-    if (!gasUrl || !targetUrl) return;
+    if (!gasUrl) { alert('GAS デプロイURLを入力してください'); return; }
+    if (!targetUrl) { alert('取得したいURLを入力してください'); return; }
     switchTab('site');
     const frame = document.getElementById('site-frame');
-    // mode=render でGASがCSS/JSのURLも書き換えたHTMLを返す
-    frame.src = gasUrl + '?mode=render&url=' + encodeURIComponent(targetUrl);
+    const siteStatus = document.getElementById('site-status');
+    siteStatus.style.display = 'block';
+    siteStatus.style.color = '#fbbf24';
+    siteStatus.textContent = '⏳ GASでHTMLを取得中... （最大30秒）';
+    frame.srcdoc = '';
+    try {
+      const proxyUrl = gasUrl + '?mode=render&url=' + encodeURIComponent(targetUrl);
+      siteStatus.textContent = '⏳ リクエスト中: ' + proxyUrl;
+      const res = await fetch(proxyUrl);
+      const html = await res.text();
+      if (!html || html.trim() === '') {
+        siteStatus.style.color = '#f87171';
+        siteStatus.textContent = '❌ GASから空のレスポンスが返りました。GASのデプロイを確認してください。';
+        return;
+      }
+      siteStatus.style.color = '#34d399';
+      siteStatus.textContent = '✅ 取得完了（' + html.length.toLocaleString() + '文字）';
+      frame.srcdoc = html;
+    } catch(err) {
+      siteStatus.style.color = '#f87171';
+      siteStatus.textContent = '❌ エラー: ' + err.message;
+    }
   }
 
   function detectContentType(text) {
